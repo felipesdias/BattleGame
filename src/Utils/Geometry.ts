@@ -1,4 +1,4 @@
-import ServerConstants from "../Utils/ServerConstants";
+import ServerConstants from "./ServerConstants";
 
 export class Point {
     x: number;
@@ -7,6 +7,10 @@ export class Point {
     constructor(_x: number = 0, _y: number = 0) {
         this.x = _x;
         this.y = _y;
+    }
+
+    public Clone(): Point {
+        return new Point(this.x, this.y);
     }
 
     public Add(other: Point): Point {
@@ -28,19 +32,19 @@ export class Point {
         );
     }
 
-    Norm(): number {
+    public Norm(): number {
         return Math.hypot(this.x, this.y);
     }
 
-    Normalized(): Point {
+    public Normalized(): Point {
         return this.Mult(1.0 / this.Norm());
     }
 
-    A(): number {
+    public angle(): number {
         return Math.atan2(this.y, this.x);
     }
 
-    PolarA(): number {
+    public PolarAngle(): number {
         const a: number = Math.atan2(this.y, this.x);
         return a < 0 ? a + 2 * Math.acos(-1.0) : a;
     }
