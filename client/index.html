@@ -37,8 +37,12 @@
 
     let players = {};
 
-    socket.on('initialPack', function (msg) {
-        players = msg;
+    socket.on('initialPack', function (allPlayers) {
+        players = allPlayers;
+    });
+
+    socket.on('addPlayer', function (player) {
+        players[player.id] = player;
     });
 
     socket.on('updatePack', function (msg) {

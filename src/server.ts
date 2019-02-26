@@ -26,7 +26,10 @@ io.on('connection', function (socket: ExtendedSocket) {
         console.log(`Player ${newPlayer.id} connected`);
         socket.player = newPlayer;
 
-        socket.emit('initialPack', game.GetInitialPack());
+        const initialPack: any = game.GetInitialPack();
+
+        socket.broadcast.emit('addPlayer', initialPack[socket.player.id]);
+        socket.emit('initialPack', initialPack);
 
         socket.on('updatePlayer', function (msg) {
             socket.player.UpdateMousePos(msg.mousePos.x, msg.mousePos.y);
