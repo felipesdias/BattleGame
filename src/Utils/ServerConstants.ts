@@ -1,3 +1,5 @@
+const playerRaio: number = 12;
+
 export default {
     EPS: 1e-9,
     GameController: {
@@ -8,7 +10,13 @@ export default {
         Height: 800
     },
     Player: {
-        Raio: 12,
+        Raio: playerRaio,
         Velocity: 10
+    },
+    Skills: {
+        Blink: {
+            Countdown: 3000,
+            ProtectZone: 50 + playerRaio
+        }
     }
 };

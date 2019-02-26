@@ -4,6 +4,7 @@ import * as httpServer from 'http';
 import * as socketio from 'socket.io';
 import GameController from './Game/GameController';
 import ExtendedSocket from './Types/ExtendedSocket';
+import ServerConstants from './Utils/ServerConstants';
 
 const app: express.Application = express();
 app.set('port', process.env.PORT || 3000);
@@ -17,7 +18,7 @@ app.get('/', (req: express.Request, res: express.Response) => {
 
 app.use('/client', express.static(__dirname + '/client'));
 
-const game = new GameController();
+const game: GameController = new GameController();
 
 io.on('connection', function (socket: ExtendedSocket) {
     const newPlayer = game.AddPlayer();
@@ -31,8 +32,21 @@ io.on('connection', function (socket: ExtendedSocket) {
         socket.broadcast.emit('addPlayer', initialPack[socket.player.id]);
         socket.emit('initialPack', initialPack);
 
-        socket.on('updatePlayer', function (msg) {
-            socket.player.UpdateMousePos(msg.mousePos.x, msg.mousePos.y);
+        socket.on('updateMousePosition', function (mousePosition) {
+            socket.player.UpdateMousePos(mousePosition.x, mousePosition.y);
+        });
+
+        socket.on('updateEvent', function (event) {
+            let response: Object;
+            switch(event.type) {
+                case 'click': 
+                    response = socket.player.skillController.blink.DoBlink(game.players)
+                    break;
+                default: 
+                    return;
+            }
+
+            socket.emit('responseEvent', response);
         });
     }
     else {

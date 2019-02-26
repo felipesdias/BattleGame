@@ -17,3 +17,7 @@ export function CutHeightPlayer(y: number): number {
     return Math.min(ServerConstants.World.Height - ServerConstants.Player.Raio,
         Math.max(0 + ServerConstants.Player.Raio, y));
 }
+
+export function GetTimeStamp(): number {
+    return (new Date()).getTime();
+}

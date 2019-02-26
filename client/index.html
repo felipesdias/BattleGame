@@ -12,7 +12,7 @@
 <body>
 
     <div class="boxCanvas">
-        <canvas id="canvasGame" width="800" height="800" onmousemove="mouseMove(event)">
+        <canvas id="canvasGame" width="800" height="800">
         </canvas>
     </div>
 
@@ -27,15 +27,12 @@
     const ctx = canvas.getContext("2d");
     const hammer = new Hammer(canvas);
 
-    function getMousePos(canvas, evt) {
-        var rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
-        };
-    }
-
     let players = {};
+
+    let sendPack = {
+        mousePos: {x: 0, y: 0}
+    };
+
 
     socket.on('initialPack', function (allPlayers) {
         players = allPlayers;
@@ -60,13 +57,9 @@
         delete players[playerId];
     });
 
-    function mouseMove(evt) {
-        const player = {
-            mousePos: getMousePos(canvas, evt)
-        };
-
-        socket.emit('updatePlayer', player);
-    }
+    socket.on('responseEvent', function (response) {
+        console.log(response)
+    });
 
     function RenderGame() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -80,6 +73,22 @@
 
     function RenderPlayer(player) {
         ctx.arc(player.posX, player.posY, player.raio, 0, 2 * Math.PI);
+    }
+
+    function getMousePos(evt) {
+        var rect = canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    }
+
+    window.onmousemove = function mouseMove(evt) {
+        socket.emit('updateMousePosition', getMousePos(evt));
+    };
+
+    window.onmousedown = function mouseDown(evt) {
+        socket.emit('updateEvent', { type: 'click'});
     }
 
 </script>

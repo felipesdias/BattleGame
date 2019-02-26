@@ -1,11 +1,13 @@
 import { Circle, Point, Dist } from "../Utils/Geometry";
 import ServerConstants from "../Utils/ServerConstants";
 import { CutHeightPlayer, CutHeightWord, CutWidthWord, CutWidthPlayer } from "../Utils/Utils";
+import SkillController from "./Skills/SkillController";
 
 class Player {
     public id: number;
     public person: Circle;
     public mousePosition: Point;
+    public skillController: SkillController;
 
     constructor(_id: number) {
         this.id = _id;
@@ -15,6 +17,7 @@ class Player {
         );
 
         this.person = new Circle(this.mousePosition.Clone(), ServerConstants.Player.Raio);
+        this.skillController = new SkillController(this);
     }
 
     UpdateMousePos(posX: number, posY: number): void {
@@ -23,8 +26,8 @@ class Player {
     }
 
     SetPlayerPos(p: Point): void {
-        this.person.center.x = CutWidthPlayer(this.person.center.x + p.x);
-        this.person.center.y = CutHeightPlayer(this.person.center.y + p.y);
+        this.person.center.x = CutWidthPlayer(p.x);
+        this.person.center.y = CutHeightPlayer(p.y);
     }
 
     UpdatePlayerPos(): void {
@@ -40,9 +43,9 @@ class Player {
             move = this.mousePosition.Sub(this.person.center);
         }
 
-            this.SetPlayerPos(move);
-        }
+        this.SetPlayerPos(this.person.center.Add(move));
     }
 }
+
 
 export default Player;
