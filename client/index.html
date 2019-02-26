@@ -52,6 +52,10 @@
         RenderGame();
     });
 
+    socket.on('deletePlayer', function (playerId) {
+        delete players[playerId];
+    });
+
     function mouseMove(evt) {
         const player = {
             mousePos: getMousePos(canvas, evt)

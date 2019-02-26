@@ -39,6 +39,7 @@ io.on('connection', function (socket: ExtendedSocket) {
     socket.on('disconnect', function () {
         if (socket.player !== null) {
             console.log(`Player ${newPlayer.id} disconnected`);
+            io.emit('deletePlayer', socket.player.id);
             game.RemovePlayer(socket.player);
         }
     });
