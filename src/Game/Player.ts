@@ -1,4 +1,3 @@
-import Constants from "../Utils/ServerConstants";
 import { Circle, Point, Dist } from "../Utils/Geometry";
 import ServerConstants from "../Utils/ServerConstants";
 import { CutHeightPlayer, CutHeightWord, CutWidthWord, CutWidthPlayer } from "../Utils/Utils";
@@ -29,11 +28,17 @@ class Player {
     }
 
     UpdatePlayerPos(): void {
+        let move: Point;
+
         if (Dist(this.person.center, this.mousePosition) > ServerConstants.Player.Velocity) {
-            const move: Point = this.mousePosition
+            move = this.mousePosition
                 .Sub(this.person.center)
                 .Normalized()
                 .Mult(ServerConstants.Player.Velocity);
+        }
+        else {
+            move = this.mousePosition.Sub(this.person.center);
+        }
 
             this.SetPlayerPos(move);
         }
