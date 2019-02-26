@@ -1,8 +1,8 @@
 import ServerConstants from "./ServerConstants";
 
 export class Point {
-    x: number;
-    y: number;
+    public x: number;
+    public y: number;
 
     constructor(_x: number = 0, _y: number = 0) {
         this.x = _x;
@@ -37,7 +37,10 @@ export class Point {
     }
 
     public Normalized(): Point {
-        return this.Mult(1.0 / this.Norm());
+        const norma = this.Norm();
+        if (norma === 0.0)
+            return new Point(0, 0);
+        return this.Mult(1.0 / norma);
     }
 
     public angle(): number {

@@ -8,6 +8,7 @@ export default {
         Height: 800
     },
     Player: {
-        Raio: 12
+        Raio: 12,
+        Velocity: 10
     }
 };

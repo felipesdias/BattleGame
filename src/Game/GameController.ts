@@ -25,7 +25,12 @@ class GameController {
     }
 
     public RemovePlayer(player: Player): boolean {
-        return this.players.delete(player.id);
+        if (this.players.has(player.id)) {
+            this.openSlots.push(player.id);
+            return this.players.delete(player.id);
+        }
+
+        return false;
     }
 
     public GetInitialPack(): Object {
@@ -34,6 +39,7 @@ class GameController {
         this.players.forEach((player, id) => {
             initialPack[id] = {
                 id: player.id,
+                raio: player.person.raio,
                 posX: player.person.center.x,
                 posY: player.person.center.y
             }
@@ -46,6 +52,8 @@ class GameController {
         const updatePack = Object.create(null);
 
         this.players.forEach((player, id) => {
+            player.UpdatePlayerPos();
+
             updatePack[id] = {
                 posX: player.person.center.x,
                 posY: player.person.center.y

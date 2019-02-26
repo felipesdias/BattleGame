@@ -15,10 +15,10 @@ app.get('/', (req: express.Request, res: express.Response) => {
     res.sendFile(path.resolve('./client/index.html'));
 });
 
+app.use('/client', express.static(__dirname + '/client'));
+
 const game = new GameController();
 
-// whenever a user connects on port 3000 via
-// a websocket, log that a user has connected
 io.on('connection', function (socket: ExtendedSocket) {
     const newPlayer = game.AddPlayer();
 
@@ -27,11 +27,12 @@ io.on('connection', function (socket: ExtendedSocket) {
         socket.player = newPlayer;
 
         socket.emit('initialPack', game.GetInitialPack());
-        // whenever we receive a 'message' we log it out
-        socket.on('message', function (message: any) {
-            console.log(message);
+
+        socket.on('updatePlayer', function (msg) {
+            socket.player.UpdateMousePos(msg.mousePos.x, msg.mousePos.y);
         });
-    } else {
+    }
+    else {
         socket.disconnect();
     }
 
