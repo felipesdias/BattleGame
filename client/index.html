@@ -22,7 +22,7 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://hammerjs.github.io/dist/hammer.js"></script>
 <script>
-    const socket = io('http://localhost:3000');
+    const socket = io(`http://${location.host}`);
     const canvas = document.getElementById('canvasGame');
     const ctx = canvas.getContext("2d");
     const hammer = new Hammer(canvas);
