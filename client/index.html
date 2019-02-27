@@ -18,7 +18,7 @@
         <div style="display: flex; margin-top: 20px">
             <div style="margin-right: 15px">
                 <input id="nickname">
-                <button onclick="startGame()"> Connect </button>
+                <button id="btnConnect" onclick="startGame()"> Connect </button>
             </div>
             <div id="tableRank" />
         </div>
@@ -33,6 +33,8 @@
     <script>
 
         function startGame() {
+            document.getElementById('btnConnect').style.display = 'none';
+
             const canvas = document.getElementById('canvasGame');
             const ctx = canvas.getContext("2d");
             const hammer = new Hammer(canvas);
