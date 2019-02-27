@@ -94,15 +94,20 @@ class Shuriken {
         }
 
         if (colisionPlayer !== null) {
-            this.player.AddKill();
-            colisionPlayer.AddDeath();
+            // this.player.AddKill();
+            // colisionPlayer.AddDeath();
 
-            this.player.io.emit('killPlayer', {
-                killer: this.player.id,
-                killed: colisionPlayer.id
-            });
+            // this.player.io.emit('killPlayer', {
+            //     killer: this.player.id,
+            //     killed: colisionPlayer.id
+            // });
 
-            this.status = EnumStatusShuriken.KILLED;
+            // this.status = EnumStatusShuriken.KILLED;
+
+            this.status = EnumStatusShuriken.GOING;
+            this.SetDirection(
+                this.shuriken.center.Sub(colisionPlayer.person.center).Sub(this.direction)
+            );
         }
 
         if ((this.status === EnumStatusShuriken.RETURNING || this.status == EnumStatusShuriken.KILLED)
