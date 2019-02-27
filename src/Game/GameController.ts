@@ -61,11 +61,15 @@ class GameController {
         updatePack.animations = [];
 
         this.players.forEach(player => {
-            player.TickPlayerPos();
+            player.skillController.TickSkillControllerPre(this.players);
         });
 
         this.players.forEach(player => {
-            player.skillController.TickSkillController(this.players);
+            player.skillController.TickSkillControllerPos(this.players);
+        });
+
+        this.players.forEach(player => {
+            player.TickPlayerPos();
         });
 
         this.players.forEach((player, id) => {

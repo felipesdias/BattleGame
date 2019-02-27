@@ -33,17 +33,19 @@ io.on('connection', function (socket: ExtendedSocket) {
 
         socket.on('updateEvent', function (event) {
             let response: ResponseToClient;
-            switch (event.type) {
-                case 'rightclick':
-                    response = socket.player.UpdateDestinationPosition(event.data);
-                    break;
-                case 'blink':
-                    response = socket.player.skillController.blink.DoBlink(event.data, game.players)
-                    break;
-                case 'shuriken':
-                    response = socket.player.skillController.shuriken.HandlerShuriken(event.data);
-                default:
+
+            if(event.type === 'rightclick') {
+                response = socket.player.UpdateDestinationPosition(event.data);
+            } else if(socket.player.alive) {
+                switch (event.type) {
+                    case 'blink':
+                        response = socket.player.skillController.blink.DoBlink(event.data, game.players)
+                        break;
+                    case 'shuriken':
+                        response = socket.player.skillController.shuriken.HandlerShuriken(event.data);
+                        default:
                     return;
+                }
             }
 
             socket.emit('responseEvent', response);

@@ -17,6 +17,10 @@ class Blink {
         this.protectedZone = ServerConstants.Skills.Blink.ProtectZone;
     }
 
+    public Reset() {
+        this.timeUsed = -1000;
+    }
+
     DoBlink(data: any, players: Map<number, Player>): ResponseToClient {
         const timeNow: number = GetTimeStamp();
         const differenceTime = timeNow - this.timeUsed;

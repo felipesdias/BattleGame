@@ -15,18 +15,30 @@ class Shuriken {
         this.status = EnumStatusShuriken.OFF;
         this.direction = new Point();
         this.velocity = ServerConstants.Skills.Shuriken.Velocity;
-        this.shuriken = new Circle(new Point(), ServerConstants.Skills.Shuriken.Raio);
+        this.shuriken = new Circle(new Point(-100, -100), ServerConstants.Skills.Shuriken.Raio);
     }
 
-    SetShurikenPosition(p: Point): void {
+    public Reset(): void {
+        this.shuriken.center = this.player.person.center;
+        this.status = EnumStatusShuriken.OFF;
+        this.direction.x = 0;
+        this.direction.y = 0;
+    }
+
+    public SetShurikenPosition(p: Point): void {
+        if (p.IsOutsideWord(this.shuriken.raio)) {
+            this.direction.x = 0;
+            this.direction.y = 0;
+            this.status == EnumStatusShuriken.GOING;
+        }
         this.shuriken.center = p.CutBorderWord(this.shuriken.raio);
     }
 
-    SetDirection(p: Point): void {
+    public SetDirection(p: Point): void {
         this.direction = p.Normalized();
     }
 
-    HandlerShuriken(data: any): ResponseToClient {
+    public HandlerShuriken(data: any): ResponseToClient {
         switch (this.status) {
             case EnumStatusShuriken.OFF:
                 this.status = EnumStatusShuriken.GOING;
@@ -44,7 +56,6 @@ class Shuriken {
                     status: 'ANY',
                     message: 'Shuriken esta voltando para você'
                 };
-            case EnumStatusShuriken.KILLED:
             case EnumStatusShuriken.RETURNING:
                 return {
                     event: 'SHURIKEN',
@@ -55,14 +66,13 @@ class Shuriken {
         }
     }
 
-    UpdateShurikenPosition(): void {
+    public UpdateShurikenPosition(): void {
         switch (this.status) {
             case EnumStatusShuriken.GOING:
                 this.SetShurikenPosition(
                     this.shuriken.center.Add(this.direction.Mult(this.velocity))
                 );
                 break;
-            case EnumStatusShuriken.KILLED:
             case EnumStatusShuriken.RETURNING:
                 this.SetShurikenPosition(
                     this.shuriken.center.Add(
@@ -74,51 +84,81 @@ class Shuriken {
         }
     }
 
-    TickShuriken(players: Map<number, Player>): void {
-        if (this.status === EnumStatusShuriken.OFF)
-            return;
-
+    private ShurikenColisionPlayer(players: Map<number, Player>): Player {
         let colisionPlayer: Player = null;
         let minorDistance: number = 1 << 30;
 
-        if (this.status !== EnumStatusShuriken.KILLED) {
-            players.forEach(p => {
-                if (p.id !== this.player.id && this.shuriken.intersects(p.person)) {
-                    const distance = Dist(this.shuriken.center, p.person.center);
-                    if (distance < minorDistance) {
-                        colisionPlayer = p;
-                        minorDistance = distance;
-                    }
+        players.forEach(p => {
+            if (p.alive && p.id !== this.player.id && this.shuriken.intersects(p.person)) {
+                const distance = Dist(this.shuriken.center, p.person.center);
+                if (distance < minorDistance) {
+                    colisionPlayer = p;
+                    minorDistance = distance;
                 }
-            });
-        }
+            }
+        });
+
+        return colisionPlayer;
+    }
+
+    private ShurikenColisionShuriken(players: Map<number, Player>): Shuriken {
+        let colisionShuriken: Shuriken = null;
+        let minorDistance: number = 1 << 30;
+
+        players.forEach(p => {
+            if (p.skillController.shuriken.status !== EnumStatusShuriken.OFF
+                && p.id !== this.player.id
+                && this.shuriken.intersects(p.skillController.shuriken.shuriken)
+            ) {
+                const distance = Dist(this.shuriken.center, p.person.center);
+                if (distance < minorDistance) {
+                    colisionShuriken = p.skillController.shuriken;
+                    minorDistance = distance;
+                }
+            }
+        });
+
+        return colisionShuriken;
+    }
+
+    public TickShuriken(players: Map<number, Player>): void {
+        if (this.status === EnumStatusShuriken.OFF)
+            return;
+
+        const colisionPlayer: Player = this.ShurikenColisionPlayer(players);
+        const colisionShuriken: Shuriken = this.ShurikenColisionShuriken(players);
 
         if (colisionPlayer !== null) {
-            // this.player.AddKill();
-            // colisionPlayer.AddDeath();
+            this.player.AddKill();
+            colisionPlayer.AddDeath();
 
-            // this.player.io.emit('killPlayer', {
-            //     killer: this.player.id,
-            //     killed: colisionPlayer.id
-            // });
+            this.player.io.emit('killPlayer', {
+                killer: this.player.id,
+                killed: colisionPlayer.id
+            });
 
-            // this.status = EnumStatusShuriken.KILLED;
-
-            this.status = EnumStatusShuriken.GOING;
-            this.SetDirection(
-                this.shuriken.center.Sub(colisionPlayer.person.center).Sub(this.direction)
-            );
+            this.status = EnumStatusShuriken.RETURNING;
         }
 
-        if ((this.status === EnumStatusShuriken.RETURNING || this.status == EnumStatusShuriken.KILLED)
+        if (colisionShuriken !== null) {
+            this.SetDirection(
+                this.shuriken.colision(this.direction, colisionShuriken.shuriken)
+            );
+
+            colisionShuriken.SetDirection(
+                colisionShuriken.shuriken.colision(colisionShuriken.direction, this.shuriken)
+            );
+
+            this.status = EnumStatusShuriken.GOING;
+        }
+
+        if (this.status == EnumStatusShuriken.RETURNING
             && Dist(this.shuriken.center, this.player.person.center) < this.player.person.raio) {
             this.status = EnumStatusShuriken.OFF;
         }
-
-        this.UpdateShurikenPosition();
     }
 
-    ToClient(): any {
+    public ToClient(): any {
         if (this.status === EnumStatusShuriken.OFF)
             return null;
 

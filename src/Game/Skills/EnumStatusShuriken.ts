@@ -1,8 +1,7 @@
 enum EnumStatusShuriken {
     OFF = 'OFF',
     RETURNING = 'RETURN',
-    GOING = 'GO',
-    KILLED = 'KILLED'
+    GOING = 'GO'
 }
 
 export default EnumStatusShuriken;

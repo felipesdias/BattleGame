@@ -3,6 +3,7 @@ import ServerConstants from "../Utils/ServerConstants";
 import SkillController from "./Skills/SkillController";
 import ExtendedSocket from "../Types/ExtendedSocket";
 import { GetColorById } from "../Utils/GenerateColor";
+import { GetTimeStamp } from "../Utils/Utils";
 
 class Player {
     public id: number;
@@ -16,6 +17,8 @@ class Player {
     public socket: ExtendedSocket;
     public kills: number;
     public deaths: number;
+    public lastRespawn: number;
+    public alive: boolean;
 
     constructor(_id: number, _io: SocketIO.Server, _socket: ExtendedSocket) {
         this.id = _id;
@@ -36,6 +39,8 @@ class Player {
         this.socket = _socket;
 
         this.nickname = this.socket.handshake.query.nickname;
+        this.lastRespawn = -1000 * 60 * 60;
+        this.alive = true;
     }
 
     AddKill(): void {
@@ -44,6 +49,9 @@ class Player {
 
     AddDeath(): void {
         this.deaths++;
+        this.alive = false;
+        this.lastRespawn = GetTimeStamp();
+        this.skillController.Reset();
     }
 
     SetDestinationPosition(p: Point): void {
@@ -65,6 +73,7 @@ class Player {
 
     TickPlayerPos(): void {
         let move: Point;
+        const timeNow = GetTimeStamp();
 
         if (Dist(this.person.center, this.destinyPosition) > this.velocity) {
             move = this.destinyPosition
@@ -77,16 +86,27 @@ class Player {
         }
 
         this.SetPlayerPos(this.person.center.Add(move));
+
+        if (!this.alive && timeNow - this.lastRespawn >= ServerConstants.Player.RespawnTime) {
+            this.alive = true;
+            this.lastRespawn = timeNow;
+        }
     }
 
     ToClient(): Object {
+        const timeNow = GetTimeStamp();
+
         const response: any = {
             kills: this.kills,
+            alive: this.alive,
             deaths: this.deaths,
             posX: this.person.center.x,
             posY: this.person.center.y,
             skills: this.skillController.ToClient()
         };
+
+        if (!this.alive)
+            response.respawn = ServerConstants.Player.RespawnTime - (timeNow - this.lastRespawn);
 
         return response;
     }

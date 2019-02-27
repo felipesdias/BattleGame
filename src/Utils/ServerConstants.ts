@@ -11,7 +11,8 @@ export default {
     },
     Player: {
         Raio: playerRaio,
-        Velocity: 10
+        Velocity: 10,
+        RespawnTime: 3000
     },
     Skills: {
         Blink: {

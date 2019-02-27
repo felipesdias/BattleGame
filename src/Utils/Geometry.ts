@@ -13,7 +13,12 @@ export class Point {
         return new Point(this.x, this.y);
     }
 
-    CutBorderWord(offset: number = 0): Point {
+    public IsOutsideWord(offset: number = 0): boolean {
+        return this.x - offset < 0 || this.y - offset < 0
+            || this.x + offset > ServerConstants.World.Width || this.y + offset > ServerConstants.World.Height;
+    }
+
+    public CutBorderWord(offset: number = 0): Point {
         return new Point(
             Math.min(ServerConstants.World.Width - offset, Math.max(0 + offset, this.x)),
             Math.min(ServerConstants.World.Height - offset, Math.max(0 + offset, this.y))
@@ -79,6 +84,10 @@ export class Circle {
 
     contains(p: Point): boolean {
         return Dist(this.center, p) <= this.raio + ServerConstants.EPS;
+    }
+
+    colision(direction: Point, c: Circle): Point {
+        return this.center.Sub(c.center).Sub(direction);
     }
 }
 

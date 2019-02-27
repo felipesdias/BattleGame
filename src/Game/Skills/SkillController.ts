@@ -13,11 +13,20 @@ class SkillController {
         this.shuriken = new Shuriken(_player);
     }
 
-    TickSkillController(players: Map<number, Player>): void {
+    public Reset(): void {
+        this.shuriken.Reset();
+        this.blink.Reset();
+    }
+
+    public TickSkillControllerPre(players: Map<number, Player>): void {
         this.shuriken.TickShuriken(players);
     }
 
-    ToClient(): Object {
+    public TickSkillControllerPos(players: Map<number, Player>): void {
+        this.shuriken.UpdateShurikenPosition();
+    }
+
+    public ToClient(): Object {
         const response: any = {
             shuriken: this.shuriken.ToClient()
         };
