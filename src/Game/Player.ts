@@ -6,7 +6,7 @@ import { GetColorById } from "../Utils/GenerateColor";
 
 class Player {
     public id: number;
-    public nickname: string,
+    public nickname: string;
     public color: string;
     public velocity: number;
     public person: Circle;
