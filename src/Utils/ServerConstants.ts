@@ -17,6 +17,10 @@ export default {
         Blink: {
             Countdown: 3000,
             ProtectZone: 50 + playerRaio
+        },
+        Shuriken: {
+            Raio: 8,
+            Velocity: 12
         }
     }
 };

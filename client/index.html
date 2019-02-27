@@ -30,7 +30,7 @@
     let players = {};
 
     let sendPack = {
-        mousePos: {x: 0, y: 0}
+        mousePos: { x: 0, y: 0 }
     };
 
 
@@ -43,10 +43,11 @@
     });
 
     socket.on('updatePack', function (msg) {
-        for (key in msg) {
+        console.log(msg);
+        for (key in msg.players) {
             players[key] = {
                 ...players[key],
-                ...msg[key]
+                ...msg.players[key]
             };
         }
 
@@ -65,14 +66,33 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         for (let key in players) {
-            ctx.beginPath();
             RenderPlayer(players[key]);
-            ctx.stroke();
         }
     }
 
     function RenderPlayer(player) {
+        ctx.fillStyle = "#c82124"; //red
+        ctx.beginPath();
         ctx.arc(player.posX, player.posY, player.raio, 0, 2 * Math.PI);
+        ctx.closePath();
+        ctx.fill();
+
+        for (key in (player.skills || {})) {
+            if (!player.skills[key])
+                return;
+
+            switch (key) {
+                case 'shuriken':
+                    const shuriken = player.skills.shuriken;
+                    ctx.fillStyle = "#3370d4"; //blue
+                    ctx.beginPath();
+                    ctx.arc(shuriken.posX, shuriken.posY, shuriken.raio, 0, 2 * Math.PI);
+                    ctx.closePath();
+                    ctx.fill();
+                    break;
+                default:
+            }
+        }
     }
 
     function getMousePos(evt) {
@@ -83,12 +103,23 @@
         };
     }
 
-    window.onmousemove = function mouseMove(evt) {
-        socket.emit('updateMousePosition', getMousePos(evt));
-    };
-
     window.onmousedown = function mouseDown(evt) {
-        socket.emit('updateEvent', { type: 'click'});
+        const mousePos = getMousePos(evt);
+
+        switch (evt.button) {
+            case 0:
+                // socket.emit('updateEvent', { type: 'blink', data: { mousePos } });
+                socket.emit('updateEvent', { type: 'shuriken', data: { mousePos } });
+                break;
+            case 2:
+                socket.emit('updateEvent', { type: 'rightclick', data: { mousePos } });
+                break;
+            default:
+        }
+    }
+
+    window.oncontextmenu = function rigthClick(evt) {
+        return false;
     }
 
 </script>

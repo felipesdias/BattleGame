@@ -5,24 +5,26 @@ import SkillController from "./Skills/SkillController";
 
 class Player {
     public id: number;
+    public velocity: number;
     public person: Circle;
-    public mousePosition: Point;
+    public destinyPosition: Point;
     public skillController: SkillController;
 
     constructor(_id: number) {
         this.id = _id;
-        this.mousePosition = new Point(
+        this.destinyPosition = new Point(
             (ServerConstants.World.Width - ServerConstants.Player.Raio) * Math.random(),
             (ServerConstants.World.Height - ServerConstants.Player.Raio) * Math.random()
         );
 
-        this.person = new Circle(this.mousePosition.Clone(), ServerConstants.Player.Raio);
+        this.velocity = ServerConstants.Player.Velocity;
+        this.person = new Circle(this.destinyPosition.Clone(), ServerConstants.Player.Raio);
         this.skillController = new SkillController(this);
     }
 
-    UpdateMousePos(posX: number, posY: number): void {
-        this.mousePosition.x = CutWidthWord(posX);
-        this.mousePosition.y = CutHeightWord(posY);
+    SetDestinationPosition(p: Point): void {
+        this.destinyPosition.x = CutWidthWord(p.x);
+        this.destinyPosition.y = CutHeightWord(p.y);
     }
 
     SetPlayerPos(p: Point): void {
@@ -30,20 +32,39 @@ class Player {
         this.person.center.y = CutHeightPlayer(p.y);
     }
 
-    UpdatePlayerPos(): void {
+    UpdateDestinationPosition(posX: number, posY: number): ResponseToClient {
+        this.SetDestinationPosition(new Point(posX, posY));
+
+        return {
+            event: 'RIGHT_CLICK',
+            status: 'OK'
+        };
+    }
+
+    TickPlayerPos(): void {
         let move: Point;
 
-        if (Dist(this.person.center, this.mousePosition) > ServerConstants.Player.Velocity) {
-            move = this.mousePosition
+        if (Dist(this.person.center, this.destinyPosition) > this.velocity) {
+            move = this.destinyPosition
                 .Sub(this.person.center)
                 .Normalized()
-                .Mult(ServerConstants.Player.Velocity);
+                .Mult(this.velocity);
         }
         else {
-            move = this.mousePosition.Sub(this.person.center);
+            move = this.destinyPosition.Sub(this.person.center);
         }
 
         this.SetPlayerPos(this.person.center.Add(move));
+    }
+
+    ToClient(): Object {
+        const response: any = {
+            posX: this.person.center.x,
+            posY: this.person.center.y,
+            skills: this.skillController.ToClient()
+        };
+
+        return response;
     }
 }
 

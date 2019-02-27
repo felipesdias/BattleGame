@@ -1,7 +1,7 @@
 import Player from "../Player";
 import { GetTimeStamp } from "../../Utils/Utils";
 import ServerConstants from "../../Utils/ServerConstants";
-import { Dist } from "../../Utils/Geometry";
+import { Dist, Point } from "../../Utils/Geometry";
 
 class Blink {
     private player: Player;
@@ -16,37 +16,40 @@ class Blink {
         this.protectedZone = ServerConstants.Skills.Blink.ProtectZone;
     }
 
-    DoBlink(players: Map<number, Player>): Object {
+    DoBlink(x: number, y: number, players: Map<number, Player>): ResponseToClient {
         const timeNow: number = GetTimeStamp();
         const differenceTime = timeNow - this.timeUsed;
 
         if (differenceTime <= this.countdown) {
             return {
-                skill: 'BLINK',
+                event: 'BLINK',
                 status: 'CD',
                 countdown: this.countdown - differenceTime
             };
         }
-        
+
+        const pointToBlink: Point = new Point(x, y);
+
         let colision: boolean = false;
         players.forEach(p => {
-            colision = colision || Dist(this.player.mousePosition, p.person.center) <= this.protectedZone;
+            colision = colision || Dist(pointToBlink, p.person.center) <= this.protectedZone;
         });
-        
-        if(colision) {
+
+        if (colision) {
             return {
-                skill: 'BLINK',
+                event: 'BLINK',
                 status: 'ANY',
                 countdown: Math.max(0, this.countdown - differenceTime),
                 message: 'Você não pode blinkar do lado de outro jogador'
-            }; 
+            };
         }
-        
+
         this.timeUsed = timeNow;
-        this.player.SetPlayerPos(this.player.mousePosition);
+        this.player.SetPlayerPos(pointToBlink);
+        this.player.SetDestinationPosition(pointToBlink);
 
         return {
-            skill: 'BLINK',
+            event: 'BLINK',
             status: 'OK',
             countdown: this.countdown
         };

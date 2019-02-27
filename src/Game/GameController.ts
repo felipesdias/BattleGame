@@ -50,14 +50,19 @@ class GameController {
 
     public GetUpdatePack(): Object {
         const updatePack = Object.create(null);
+        updatePack.players = {};
+        updatePack.animations = [];
+
+        this.players.forEach(player => {
+            player.TickPlayerPos();
+        });
+
+        this.players.forEach(player => {
+            player.skillController.TickSkillController(this.players);
+        });
 
         this.players.forEach((player, id) => {
-            player.UpdatePlayerPos();
-
-            updatePack[id] = {
-                posX: player.person.center.x,
-                posY: player.person.center.y
-            }
+            updatePack.players[id] = player.ToClient();
         });
 
         return updatePack;

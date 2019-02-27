@@ -32,21 +32,26 @@ io.on('connection', function (socket: ExtendedSocket) {
         socket.broadcast.emit('addPlayer', initialPack[socket.player.id]);
         socket.emit('initialPack', initialPack);
 
-        socket.on('updateMousePosition', function (mousePosition) {
-            socket.player.UpdateMousePos(mousePosition.x, mousePosition.y);
-        });
-
         socket.on('updateEvent', function (event) {
-            let response: Object;
-            switch(event.type) {
-                case 'click': 
-                    response = socket.player.skillController.blink.DoBlink(game.players)
+            let response: ResponseToClient;
+            switch (event.type) {
+                case 'rightclick':
+                    response = socket.player.UpdateDestinationPosition(event.data.mousePos.x, event.data.mousePos.y);
                     break;
-                default: 
+                case 'blink':
+                    response = socket.player.skillController.blink.DoBlink(event.data.mousePos.x, event.data.mousePos.y, game.players)
+                    break;
+                case 'shuriken':
+                    response = socket.player.skillController.shuriken.HandlerShuriken(event.data.mousePos.x, event.data.mousePos.y);
+                    console.log(response);
+                default:
                     return;
             }
 
-            socket.emit('responseEvent', response);
+            if (response['status'] !== 'OK') {
+                socket.emit('responseEvent', response);
+            }
+
         });
     }
     else {
