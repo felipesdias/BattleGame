@@ -2,6 +2,7 @@ import Player from "../Player";
 import { GetTimeStamp } from "../../Utils/Utils";
 import ServerConstants from "../../Utils/ServerConstants";
 import { Dist, Point } from "../../Utils/Geometry";
+import { cloneDeep } from "lodash";
 
 class Blink {
     private player: Player;
@@ -16,7 +17,7 @@ class Blink {
         this.protectedZone = ServerConstants.Skills.Blink.ProtectZone;
     }
 
-    DoBlink(x: number, y: number, players: Map<number, Player>): ResponseToClient {
+    DoBlink(data: any, players: Map<number, Player>): ResponseToClient {
         const timeNow: number = GetTimeStamp();
         const differenceTime = timeNow - this.timeUsed;
 
@@ -28,7 +29,7 @@ class Blink {
             };
         }
 
-        const pointToBlink: Point = new Point(x, y);
+        const pointToBlink: Point = new Point(data.mousePos.x, data.mousePos.y);
 
         let colision: boolean = false;
         players.forEach(p => {

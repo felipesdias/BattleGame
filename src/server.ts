@@ -4,7 +4,6 @@ import * as httpServer from 'http';
 import * as socketio from 'socket.io';
 import GameController from './Game/GameController';
 import ExtendedSocket from './Types/ExtendedSocket';
-import ServerConstants from './Utils/ServerConstants';
 
 const app: express.Application = express();
 app.set('port', process.env.PORT || 3000);
@@ -16,12 +15,12 @@ app.get('/', (req: express.Request, res: express.Response) => {
     res.sendFile(path.resolve('./client/index.html'));
 });
 
-app.use('/client', express.static(__dirname + '/client'));
+app.use('/client', express.static('client'));
 
-const game: GameController = new GameController();
+const game: GameController = new GameController(io);
 
 io.on('connection', function (socket: ExtendedSocket) {
-    const newPlayer = game.AddPlayer();
+    const newPlayer = game.AddPlayer(socket);
 
     if (newPlayer !== null) {
         console.log(`Player ${newPlayer.id} connected`);
@@ -36,22 +35,18 @@ io.on('connection', function (socket: ExtendedSocket) {
             let response: ResponseToClient;
             switch (event.type) {
                 case 'rightclick':
-                    response = socket.player.UpdateDestinationPosition(event.data.mousePos.x, event.data.mousePos.y);
+                    response = socket.player.UpdateDestinationPosition(event.data);
                     break;
                 case 'blink':
-                    response = socket.player.skillController.blink.DoBlink(event.data.mousePos.x, event.data.mousePos.y, game.players)
+                    response = socket.player.skillController.blink.DoBlink(event.data, game.players)
                     break;
                 case 'shuriken':
-                    response = socket.player.skillController.shuriken.HandlerShuriken(event.data.mousePos.x, event.data.mousePos.y);
-                    console.log(response);
+                    response = socket.player.skillController.shuriken.HandlerShuriken(event.data);
                 default:
                     return;
             }
 
-            if (response['status'] !== 'OK') {
-                socket.emit('responseEvent', response);
-            }
-
+            socket.emit('responseEvent', response);
         });
     }
     else {

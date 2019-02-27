@@ -10,126 +10,230 @@
 </head>
 
 <body>
-
-    <div class="boxCanvas">
-        <canvas id="canvasGame" width="800" height="800">
-        </canvas>
+    <div class="content">
+        <div class="boxCanvas">
+            <canvas id="canvasGame" width="800" height="800">
+            </canvas>
+        </div>
+        <div style="display: flex; margin-top: 20px">
+            <div style="margin-right: 15px">
+                <input id="nickname">
+                <button onclick="startGame()"> Connect </button>
+            </div>
+            <div id="tableRank" />
+        </div>
     </div>
 
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
-</body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client/js/mousetrap.min.js"></script>
+    <script src="https://hammerjs.github.io/dist/hammer.js"></script>
+    <script>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="https://hammerjs.github.io/dist/hammer.js"></script>
-<script>
-    const socket = io(`http://${location.host}`);
-    const canvas = document.getElementById('canvasGame');
-    const ctx = canvas.getContext("2d");
-    const hammer = new Hammer(canvas);
+        function startGame() {
+            const canvas = document.getElementById('canvasGame');
+            const ctx = canvas.getContext("2d");
+            const hammer = new Hammer(canvas);
+            let players = {};
+            let pressedKeys = {};
+            let mousePos = { x: 0, y: 0 };
 
-    let players = {};
+            const socket = io(`http://${location.host}`, {
+                query: {
+                    nickname: document.getElementById('nickname').value
+                }
+            });
 
-    let sendPack = {
-        mousePos: { x: 0, y: 0 }
-    };
+            socket.on('initialPack', function (allPlayers) {
+                players = allPlayers;
+            });
+
+            socket.on('addPlayer', function (player) {
+                players[player.id] = player;
+            });
+
+            socket.on('killPlayer', function (msg) {
+                Toastify({
+                    text: `${players[msg.killer].nickname} matou ${players[msg.killed].nickname}`,
+                    duration: 3000,
+                    close: true,
+                    gravity: "bottom", // `top` or `bottom`
+                    positionLeft: false, // `true` or `false`
+                    backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+                }).showToast();
+
+                setTimeout(() => {
+                    RenderRankTable();
+                }, 250);
+            });
+
+            socket.on('updatePack', function (msg) {
+                for (key in msg.players) {
+                    players[key] = {
+                        ...players[key],
+                        ...msg.players[key]
+                    };
+                }
+
+                RenderGame();
+            });
+
+            socket.on('deletePlayer', function (playerId) {
+                delete players[playerId];
+            });
+
+            socket.on('responseEvent', function (response) {
+                if (response.status !== 'OK')
+                    console.log('responseEvent', response)
+            });
+
+            function RenderGame() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                for (let key in players) {
+                    RenderPlayer(players[key]);
+                }
+            }
+
+            function RenderPlayer(player) {
+                ctx.fillStyle = player.color;
+                ctx.beginPath();
+                ctx.arc(player.posX, player.posY, player.raio, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.fill();
+
+                for (key in (player.skills || {})) {
+                    if (!player.skills[key])
+                        return;
+
+                    switch (key) {
+                        case 'shuriken':
+                            const shuriken = player.skills[key];
+                            ctx.strokeStyle = player.color;
+                            ctx.beginPath();
+                            ctx.arc(shuriken.posX, shuriken.posY, shuriken.raio, 0, 2 * Math.PI);
+                            ctx.closePath();
+                            ctx.stroke();
+                            break;
+                        default:
+                    }
+                }
+            }
+
+            function RenderRankTable() {
+                const divTable = document.getElementById('tableRank');
+                divTable.innerHTML = "";
+
+                const table = document.createElement('TABLE');
+
+                const header = document.createElement('TR');
+                ['Color', 'Nickname', 'Kills', 'Deaths', 'Points'].forEach(h => {
+                    const th = document.createElement('TH');
+                    th.innerText = h;
+                    header.appendChild(th);
+                });
+                table.appendChild(header);
+
+                Object.keys(players).sort((a, b) => {
+                    return (players[b].kills - players[b].deaths) - (players[a].kills - players[a].deaths)
+                }).forEach(key => {
+                    const player = players[key];
+                    const line = document.createElement('TR');
+
+                    const tdColor = document.createElement('TD');
+                    tdColor.style.background = player.color;
+                    line.append(tdColor);
+                    ['nickname', 'kills', 'deaths'].forEach(h => {
+                        const td = document.createElement('TD');
+                        td.innerText = player[h];
+                        line.appendChild(td);
+                    });
+                    const tdPoints = document.createElement('TD');
+                    tdPoints.innerText = String(player.kills - player.deaths);
+                    line.appendChild(tdPoints);
+
+                    table.appendChild(line);
+                });
+
+                divTable.appendChild(table);
+            }
+
+            function getMousePos(evt) {
+                var rect = canvas.getBoundingClientRect();
+                return {
+                    x: evt.clientX - rect.left,
+                    y: evt.clientY - rect.top
+                };
+            }
+
+            function bindKey(key, callback) {
+                Mousetrap.bind(key, function (e) {
+                    if (pressedKeys[e.keyCode])
+                        return;
+                    pressedKeys[e.keyCode] = true;
+                    callback();
+                }, 'keydown');
+
+                Mousetrap.bind(key, function (e) {
+                    pressedKeys[e.keyCode] = false;
+                }, 'keyup');
+            }
 
 
-    socket.on('initialPack', function (allPlayers) {
-        players = allPlayers;
-    });
+            function shuriken() {
+                socket.emit('updateEvent', { type: 'shuriken', data: { mousePos } });
+            }
 
-    socket.on('addPlayer', function (player) {
-        players[player.id] = player;
-    });
+            function blink() {
+                socket.emit('updateEvent', { type: 'blink', data: { mousePos } });
+            }
 
-    socket.on('updatePack', function (msg) {
-        console.log(msg);
-        for (key in msg.players) {
-            players[key] = {
-                ...players[key],
-                ...msg.players[key]
-            };
-        }
 
-        RenderGame();
-    });
+            bindKey('q', shuriken);
+            bindKey('w', blink);
 
-    socket.on('deletePlayer', function (playerId) {
-        delete players[playerId];
-    });
+            window.onmousedown = function mouseDown(evt) {
+                switch (evt.button) {
+                    case 0:
+                        // socket.emit('updateEvent', { type: 'blink', data: { mousePos } });
+                        // socket.emit('updateEvent', { type: 'shuriken', data: { mousePos } });
+                        break;
+                    case 2:
+                        socket.emit('updateEvent', { type: 'rightclick', data: { mousePos } });
+                        break;
+                    default:
+                }
+            }
 
-    socket.on('responseEvent', function (response) {
-        console.log(response)
-    });
+            window.oncontextmenu = function rigthClick(evt) {
+                return false;
+            }
 
-    function RenderGame() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        for (let key in players) {
-            RenderPlayer(players[key]);
-        }
-    }
-
-    function RenderPlayer(player) {
-        ctx.fillStyle = "#c82124"; //red
-        ctx.beginPath();
-        ctx.arc(player.posX, player.posY, player.raio, 0, 2 * Math.PI);
-        ctx.closePath();
-        ctx.fill();
-
-        for (key in (player.skills || {})) {
-            if (!player.skills[key])
-                return;
-
-            switch (key) {
-                case 'shuriken':
-                    const shuriken = player.skills.shuriken;
-                    ctx.fillStyle = "#3370d4"; //blue
-                    ctx.beginPath();
-                    ctx.arc(shuriken.posX, shuriken.posY, shuriken.raio, 0, 2 * Math.PI);
-                    ctx.closePath();
-                    ctx.fill();
-                    break;
-                default:
+            window.onmousemove = function mouseMove(evt) {
+                mousePos = getMousePos(evt);
             }
         }
-    }
+    </script>
 
-    function getMousePos(evt) {
-        var rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
-        };
-    }
-
-    window.onmousedown = function mouseDown(evt) {
-        const mousePos = getMousePos(evt);
-
-        switch (evt.button) {
-            case 0:
-                // socket.emit('updateEvent', { type: 'blink', data: { mousePos } });
-                socket.emit('updateEvent', { type: 'shuriken', data: { mousePos } });
-                break;
-            case 2:
-                socket.emit('updateEvent', { type: 'rightclick', data: { mousePos } });
-                break;
-            default:
+    <style>
+        .boxCanvas {
+            border: solid 1px black;
+            width: 800px;
+            height: 800px;
         }
-    }
 
-    window.oncontextmenu = function rigthClick(evt) {
-        return false;
-    }
+        .content {
+            margin: 0 auto;
+            width: 50%;
+        }
 
-</script>
-
-<style>
-    .boxCanvas {
-        border: solid 1px black;
-        width: 800px;
-        height: 800px;
-    }
-</style>
+        th,
+        td {
+            padding: 2px 20px;
+        }
+    </style>
+</body>
 
 </html>

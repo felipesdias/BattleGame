@@ -1,8 +1,8 @@
 import Player from "../Player";
-import { GetTimeStamp, CutWidthPlayer, CutHeightPlayer } from "../../Utils/Utils";
 import ServerConstants from "../../Utils/ServerConstants";
 import { Dist, Point, Circle } from "../../Utils/Geometry";
 import EnumStatusShuriken from "./EnumStatusShuriken";
+import { cloneDeep } from 'lodash';
 
 class Shuriken {
     private player: Player;
@@ -20,20 +20,19 @@ class Shuriken {
     }
 
     SetShurikenPosition(p: Point): void {
-        this.shuriken.center.x = CutWidthPlayer(p.x);
-        this.shuriken.center.y = CutHeightPlayer(p.y);
+        this.shuriken.center = p.CutBorderWord(this.shuriken.raio);
     }
 
     SetDirection(p: Point): void {
         this.direction = p.Normalized();
     }
 
-    HandlerShuriken(x: number, y: number): ResponseToClient {
+    HandlerShuriken(data: any): ResponseToClient {
         switch (this.status) {
             case EnumStatusShuriken.OFF:
                 this.status = EnumStatusShuriken.GOING;
                 this.SetShurikenPosition(this.player.person.center);
-                this.SetDirection((new Point(x, y)).Sub(this.player.person.center));
+                this.SetDirection((new Point(data.mousePos.x, data.mousePos.y)).Sub(this.player.person.center));
                 return {
                     event: 'OK',
                     status: 'ANY',
@@ -46,6 +45,7 @@ class Shuriken {
                     status: 'ANY',
                     message: 'Shuriken esta voltando para você'
                 };
+            case EnumStatusShuriken.KILLED:
             case EnumStatusShuriken.RETURNING:
                 return {
                     event: 'SHURIKEN',
@@ -57,17 +57,21 @@ class Shuriken {
     }
 
     UpdateShurikenPosition(): void {
-        if (this.status === EnumStatusShuriken.GOING) {
-            this.SetShurikenPosition(
-                this.shuriken.center.Add(this.direction.Mult(this.velocity))
-            );
-        }
-        else if (this.status === EnumStatusShuriken.RETURNING) {
-            this.SetShurikenPosition(
-                this.shuriken.center.Add(
-                    this.player.person.center.Sub(this.shuriken.center).Normalized().Mult(this.velocity * 1.5)
-                )
-            );
+        switch (this.status) {
+            case EnumStatusShuriken.GOING:
+                this.SetShurikenPosition(
+                    this.shuriken.center.Add(this.direction.Mult(this.velocity))
+                );
+                break;
+            case EnumStatusShuriken.KILLED:
+            case EnumStatusShuriken.RETURNING:
+                this.SetShurikenPosition(
+                    this.shuriken.center.Add(
+                        this.player.person.center.Sub(this.shuriken.center).Normalized().Mult(this.velocity * 1.5)
+                    )
+                );
+                break;
+            default:
         }
     }
 
@@ -77,22 +81,32 @@ class Shuriken {
 
         let colisionPlayer: Player = null;
         let minorDistance: number = 1 << 30;
-        players.forEach(p => {
-            if (p.id !== this.player.id && this.shuriken.intersects(p.person)) {
-                const distance = Dist(this.shuriken.center, p.person.center);
-                if (distance < minorDistance) {
-                    colisionPlayer = p;
-                    minorDistance = distance;
-                }
-            }
-        });
 
-        if (colisionPlayer !== null) {
-            console.log(`Player ${this.player.id} matou ${colisionPlayer.id}`);
-            this.status = EnumStatusShuriken.RETURNING;
+        if (this.status !== EnumStatusShuriken.KILLED) {
+            players.forEach(p => {
+                if (p.id !== this.player.id && this.shuriken.intersects(p.person)) {
+                    const distance = Dist(this.shuriken.center, p.person.center);
+                    if (distance < minorDistance) {
+                        colisionPlayer = p;
+                        minorDistance = distance;
+                    }
+                }
+            });
         }
 
-        if (this.status === EnumStatusShuriken.RETURNING
+        if (colisionPlayer !== null) {
+            this.player.AddKill();
+            colisionPlayer.AddDeath();
+
+            this.player.io.emit('killPlayer', {
+                killer: this.player.id,
+                killed: colisionPlayer.id
+            });
+
+            this.status = EnumStatusShuriken.KILLED;
+        }
+
+        if ((this.status === EnumStatusShuriken.RETURNING || this.status == EnumStatusShuriken.KILLED)
             && Dist(this.shuriken.center, this.player.person.center) < this.player.person.raio) {
             this.status = EnumStatusShuriken.OFF;
         }
@@ -104,11 +118,13 @@ class Shuriken {
         if (this.status === EnumStatusShuriken.OFF)
             return null;
 
-        return {
+        const response: any = {
             posX: this.shuriken.center.x,
             posY: this.shuriken.center.y,
-            raio: this.shuriken.raio
+            raio: this.shuriken.raio,
         };
+
+        return response;
     }
 }
 

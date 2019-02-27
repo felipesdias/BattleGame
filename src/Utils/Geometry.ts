@@ -13,6 +13,13 @@ export class Point {
         return new Point(this.x, this.y);
     }
 
+    CutBorderWord(offset: number = 0): Point {
+        return new Point(
+            Math.min(ServerConstants.World.Width - offset, Math.max(0 + offset, this.x)),
+            Math.min(ServerConstants.World.Height - offset, Math.max(0 + offset, this.y))
+        );
+    }
+
     public Add(other: Point): Point {
         return new Point(this.x + other.x, this.y + other.y);
     }
