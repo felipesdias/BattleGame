@@ -2,7 +2,6 @@ import Player from "../Player";
 import ServerConstants from "../../Utils/ServerConstants";
 import { Dist, Point, Circle } from "../../Utils/Geometry";
 import EnumStatusShuriken from "./EnumStatusShuriken";
-import { cloneDeep } from 'lodash';
 
 class Shuriken {
     private player: Player;
@@ -15,7 +14,7 @@ class Shuriken {
         this.player = _player;
         this.status = EnumStatusShuriken.OFF;
         this.direction = new Point();
-        this.velocity = _player.velocity;
+        this.velocity = ServerConstants.Skills.Shuriken.Velocity;
         this.shuriken = new Circle(new Point(), ServerConstants.Skills.Shuriken.Raio);
     }
 

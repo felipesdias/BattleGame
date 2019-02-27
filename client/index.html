@@ -99,8 +99,30 @@
             });
 
             socket.on('responseEvent', function (response) {
-                if (response.status !== 'OK')
+                if (response.status !== 'OK') {
                     console.log('responseEvent', response)
+                    if(response.status === 'CD') {
+                        Toastify({
+                            text: `Espere ${(response.countdown / 1000).toFixed(2)} segundos para usar novamente`,
+                            duration: 3000,
+                            close: true,
+                            gravity: "bottom", // `top` or `bottom`
+                            positionLeft: true, // `true` or `false`
+                            backgroundColor: "skyblue",
+                        }).showToast();
+                    }
+                    else {
+                        Toastify({
+                            text: `${response.message}`,
+                            duration: 3000,
+                            close: true,
+                            gravity: "bottom", // `top` or `bottom`
+                            positionLeft: true, // `true` or `false`
+                            backgroundColor: "skyblue",
+                        }).showToast();
+                    }
+                }
+
             });
 
             function RenderGame() {

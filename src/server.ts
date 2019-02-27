@@ -69,4 +69,4 @@ http.listen(process.env.PORT || 3000, function () {
 
 setInterval(function () {
     io.emit('updatePack', game.GetUpdatePack());
-}, 25);
+}, 20);
