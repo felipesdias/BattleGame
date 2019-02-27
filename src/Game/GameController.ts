@@ -46,7 +46,9 @@ class GameController {
                 color: player.color,
                 raio: player.person.raio,
                 posX: player.person.center.x,
-                posY: player.person.center.y
+                posY: player.person.center.y,
+                kills: player.kills,
+                deaths: player.deaths
             }
         });
 

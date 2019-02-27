@@ -48,10 +48,18 @@
 
             socket.on('initialPack', function (allPlayers) {
                 players = allPlayers;
+
+                setTimeout(() => {
+                    RenderRankTable();
+                }, 250);
             });
 
             socket.on('addPlayer', function (player) {
                 players[player.id] = player;
+
+                setTimeout(() => {
+                    RenderRankTable();
+                }, 250);
             });
 
             socket.on('killPlayer', function (msg) {
@@ -82,6 +90,10 @@
 
             socket.on('deletePlayer', function (playerId) {
                 delete players[playerId];
+
+                setTimeout(() => {
+                    RenderRankTable();
+                }, 250);
             });
 
             socket.on('responseEvent', function (response) {
