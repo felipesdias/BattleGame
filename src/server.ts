@@ -8,7 +8,7 @@ import GlobalVariables from './Utils/GlobalVariables';
 import { GetTimeStamp } from './Utils/Utils';
 
 const app: express.Application = express();
-app.set('port', process.env.PORT || 3000);
+app.set('port', process.env.PORT || 80);
 
 const http: httpServer.Server = new httpServer.Server(app);
 const io: SocketIO.Server = socketio(http);
@@ -58,8 +58,8 @@ io.on('connection', function (socket: ExtendedSocket) {
 });
 
 
-http.listen(process.env.PORT || 3000, function () {
-    console.log('listening on *:3000');
+http.listen(process.env.PORT || 80, function () {
+    console.log('listening on *:80');
 });
 
 setInterval(function () {
