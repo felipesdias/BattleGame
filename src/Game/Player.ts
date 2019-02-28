@@ -3,7 +3,7 @@ import ServerConstants from "../Utils/ServerConstants";
 import SkillController from "./Skills/SkillController";
 import ExtendedSocket from "../Types/ExtendedSocket";
 import { GetColorById } from "../Utils/GenerateColor";
-import { GetTimeStamp } from "../Utils/Utils";
+import GlobalVariables from "../Utils/GlobalVariables";
 
 class Player {
     public id: number;
@@ -50,7 +50,7 @@ class Player {
     AddDeath(): void {
         this.deaths++;
         this.alive = false;
-        this.lastRespawn = GetTimeStamp();
+        this.lastRespawn = GlobalVariables.TimeNow;
         this.skillController.Reset();
     }
 
@@ -73,7 +73,7 @@ class Player {
 
     TickPlayerPos(): void {
         let move: Point;
-        const timeNow = GetTimeStamp();
+        const timeNow = GlobalVariables.TimeNow;
 
         if (Dist(this.person.center, this.destinyPosition) > this.velocity) {
             move = this.destinyPosition
@@ -94,7 +94,7 @@ class Player {
     }
 
     ToClient(): Object {
-        const timeNow = GetTimeStamp();
+        const timeNow = GlobalVariables.TimeNow;
 
         const response: any = {
             kills: this.kills,

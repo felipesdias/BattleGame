@@ -4,6 +4,8 @@ import * as httpServer from 'http';
 import * as socketio from 'socket.io';
 import GameController from './Game/GameController';
 import ExtendedSocket from './Types/ExtendedSocket';
+import GlobalVariables from './Utils/GlobalVariables';
+import { GetTimeStamp } from './Utils/Utils';
 
 const app: express.Application = express();
 app.set('port', process.env.PORT || 3000);
@@ -34,20 +36,11 @@ io.on('connection', function (socket: ExtendedSocket) {
         socket.on('updateEvent', function (event) {
             let response: ResponseToClient;
 
-            if(event.type === 'rightclick') {
+            if (event.type === 'rightclick') {
                 response = socket.player.UpdateDestinationPosition(event.data);
-            } else if(socket.player.alive) {
-                switch (event.type) {
-                    case 'blink':
-                        response = socket.player.skillController.blink.DoBlink(event.data, game.players)
-                        break;
-                    case 'shuriken':
-                        response = socket.player.skillController.shuriken.HandlerShuriken(event.data);
-                        default:
-                    return;
-                }
+            } else if (socket.player.alive) {
+                response = socket.player.skillController.HandlerEventSkill(event, game.players);
             }
-
             socket.emit('responseEvent', response);
         });
     }
@@ -70,5 +63,6 @@ http.listen(process.env.PORT || 3000, function () {
 });
 
 setInterval(function () {
+    GlobalVariables.TimeNow = GetTimeStamp();
     io.emit('updatePack', game.GetUpdatePack());
 }, 20);

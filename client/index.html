@@ -157,14 +157,26 @@
                     if (!player.skills[key])
                         return;
 
+                    const skill = player.skills[key];
+
                     switch (key) {
                         case 'shuriken':
-                            const shuriken = player.skills[key];
                             ctx.strokeStyle = player.color;
                             ctx.beginPath();
-                            ctx.arc(shuriken.posX, shuriken.posY, shuriken.raio, 0, 2 * Math.PI);
+                            ctx.arc(skill.posX, skill.posY, skill.raio, 0, 2 * Math.PI);
                             ctx.closePath();
                             ctx.stroke();
+                            break;
+                        case 'blink':
+                            break;
+                        case 'shield':
+                            if (skill.active) {
+                                ctx.fillStyle = convertHex('#00ff88', 40);
+                                ctx.beginPath();
+                                ctx.arc(player.posX, player.posY, skill.protectedArea, 0, 2 * Math.PI);
+                                ctx.closePath();
+                                ctx.fill();
+                            }
                             break;
                         default:
                     }
@@ -232,22 +244,26 @@
 
 
             function shuriken() {
-                socket.emit('updateEvent', { type: 'shuriken', data: { mousePos } });
+                socket.emit('updateEvent', { type: 'SHURIKEN', data: { mousePos } });
             }
 
             function blink() {
-                socket.emit('updateEvent', { type: 'blink', data: { mousePos } });
+                socket.emit('updateEvent', { type: 'BLINK', data: { mousePos } });
+            }
+
+            function shield() {
+                socket.emit('updateEvent', { type: 'SHIELD', data: {} });
             }
 
 
             bindKey('q', shuriken);
             bindKey('w', blink);
+            bindKey('e', shield);
 
             window.onmousedown = function mouseDown(evt) {
                 switch (evt.button) {
                     case 0:
-                        // socket.emit('updateEvent', { type: 'blink', data: { mousePos } });
-                        // socket.emit('updateEvent', { type: 'shuriken', data: { mousePos } });
+                        // click botão esquerdo
                         break;
                     case 2:
                         socket.emit('updateEvent', { type: 'rightclick', data: { mousePos } });

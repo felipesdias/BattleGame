@@ -1,10 +1,10 @@
 import Player from "../Player";
-import { GetTimeStamp } from "../../Utils/Utils";
 import ServerConstants from "../../Utils/ServerConstants";
 import { Dist, Point } from "../../Utils/Geometry";
-import { cloneDeep } from "lodash";
+import AbstractSkill from "../../Types/AbstractSkill";
+import GlobalVariables from "../../Utils/GlobalVariables";
 
-class Blink {
+class Blink implements AbstractSkill {
     private player: Player;
     private timeUsed: number;
     private countdown: number;
@@ -21,8 +21,15 @@ class Blink {
         this.timeUsed = -1000;
     }
 
-    DoBlink(data: any, players: Map<number, Player>): ResponseToClient {
-        const timeNow: number = GetTimeStamp();
+    public ToClient(): any {
+        const differenceTime = GlobalVariables.TimeNow - this.timeUsed;
+        return {
+            cd: Math.max(0, this.countdown - differenceTime)
+        };
+    }
+
+    public HandlerEvent(data: any, players: Map<number, Player>): ResponseToClient {
+        const timeNow: number = GlobalVariables.TimeNow;
         const differenceTime = timeNow - this.timeUsed;
 
         if (differenceTime <= this.countdown) {
@@ -59,6 +66,9 @@ class Blink {
             countdown: this.countdown
         };
     }
+
+    public TickSkillPre(players: Map<number, Player>): void { };
+    public TickSkillPos(): void { };
 }
 
 export default Blink;

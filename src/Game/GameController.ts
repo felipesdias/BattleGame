@@ -65,15 +65,12 @@ class GameController {
         });
 
         this.players.forEach(player => {
-            player.skillController.TickSkillControllerPos(this.players);
+            player.skillController.TickSkillControllerPos();
         });
 
         this.players.forEach(player => {
             player.TickPlayerPos();
-        });
-
-        this.players.forEach((player, id) => {
-            updatePack.players[id] = player.ToClient();
+            updatePack.players[player.id] = player.ToClient();
         });
 
         return updatePack;

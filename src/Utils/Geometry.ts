@@ -70,23 +70,27 @@ export class Circle {
     raio: number;
 
     constructor(_center: Point = new Point(), _raio: number = 0) {
-        this.center = _center;
+        this.center = _center.Clone();
         this.raio = _raio;
     }
 
-    area(): number {
+    AddRaio(r: number) {
+        return new Circle(this.center, this.raio + r);
+    }
+
+    Area(): number {
         return Math.acos(-1.0) * this.raio * this.raio;
     }
 
-    intersects(other: Circle): boolean {
+    Intersects(other: Circle): boolean {
         return Dist(this.center, other.center) < this.raio + other.raio;
     }
 
-    contains(p: Point): boolean {
+    Contains(p: Point): boolean {
         return Dist(this.center, p) <= this.raio + ServerConstants.EPS;
     }
 
-    colision(direction: Point, c: Circle): Point {
+    Colision(direction: Point, c: Circle): Point {
         return this.center.Sub(c.center).Sub(direction);
     }
 }

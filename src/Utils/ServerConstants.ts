@@ -22,6 +22,11 @@ export default {
         Shuriken: {
             Raio: 10,
             Velocity: 12
+        },
+        Shield: {
+            Countdown: 7500,
+            Duration: 2500,
+            ProtectedArea: 10
         }
     }
 };
