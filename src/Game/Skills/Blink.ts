@@ -57,8 +57,16 @@ class Blink implements AbstractSkill {
         }
 
         this.timeUsed = timeNow;
+
+        this.player.io.emit('blink', {
+            playerId: this.player.id,
+            posX: this.player.person.center.x,
+            posY: this.player.person.center.y
+        });
+
         this.player.SetPlayerPos(pointToBlink);
         this.player.SetDestinationPosition(pointToBlink);
+
 
         return {
             event: 'BLINK',

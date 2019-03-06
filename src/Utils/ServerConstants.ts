@@ -16,7 +16,7 @@ export default {
     },
     Skills: {
         Blink: {
-            Countdown: 1000,
+            Countdown: 1250,
             ProtectZone: 50 + playerRaio
         },
         Shuriken: {

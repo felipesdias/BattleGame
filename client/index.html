@@ -90,6 +90,10 @@
                 RenderGame();
             });
 
+            socket.on('blink', function (data) {
+                animationBlink(data, 500);
+            });
+
             socket.on('deletePlayer', function (playerId) {
                 delete players[playerId];
 
@@ -128,6 +132,63 @@
 
             });
 
+            function animationBlink(data, duration) {
+                const originalRaio = players[data.playerId].raio;
+                const tickCos = 10.0 / duration;
+
+                players[data.playerId].animation = players[data.playerId].animation || {};
+
+                players[data.playerId].animation.blink = [];
+                const blinkParticles = players[data.playerId].animation.blink;
+
+                for (let i = 0; i < 75; i++) {
+                    let x = Math.random() * 10 * (Math.random() >= 0.5 ? 1 : -1);
+                    let y = Math.random() * 10 * (Math.random() >= 0.5 ? 1 : -1);
+                    const dist = Math.random() * players[data.playerId].raio;
+                    const norm = Math.hypot(x, y);
+                    x *= 1.0 / norm;
+                    y *= 1.0 / norm;
+
+                    blinkParticles.push({
+                        posX: x,
+                        posY: y,
+                        dist: dist,
+                        center: {
+                            posX: data.posX,
+                            posY: data.posY
+                        }
+                    });
+                }
+
+                const doAnimation = cos => {
+                    if (cos >= 1)
+                        players[data.playerId].raio = originalRaio;
+                    else {
+                        players[data.playerId].raio = originalRaio * Math.abs(Math.cos(Math.PI * cos));
+                        setTimeout(() => {
+                            doAnimation(cos + tickCos);
+                        }, 10);
+                    }
+                }
+
+                const doParticles = time => {
+                    if (time > duration)
+                        players[data.playerId].animation.blink = [];
+                    else {
+                        blinkParticles.forEach(p => {
+                            p.dist += p.dist * 0.05;
+                        });
+
+                        setTimeout(() => {
+                            doParticles(time + 10);
+                        }, 10);
+                    }
+                }
+
+                doAnimation(0.5);
+                doParticles(0);
+            }
+
             function convertHex(hex, opacity) {
                 hex = hex.replace('#', '');
                 r = parseInt(hex.substring(0, 2), 16);
@@ -143,6 +204,20 @@
 
                 for (let key in players) {
                     RenderPlayer(players[key]);
+                    RenderPlayerAnimation(players[key]);
+                }
+            }
+
+            function RenderPlayerAnimation(player) {
+                if (!player.animation)
+                    return;
+
+                if (player.animation.blink && player.animation.blink.length > 0) {
+                    ctx.fillStyle = player.color;
+                    player.animation.blink.forEach(p => {
+                        ctx.fillRect(p.posX * p.dist + p.center.posX, p.posY * p.dist + p.center.posY, 1, 1);
+                    });
+                    ctx.stroke();
                 }
             }
 
