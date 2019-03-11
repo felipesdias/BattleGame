@@ -8,7 +8,7 @@ import GlobalVariables from './Utils/GlobalVariables';
 import { GetTimeStamp } from './Utils/Utils';
 
 const app: express.Application = express();
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 80;
 app.set('port', port);
 
 const http: httpServer.Server = new httpServer.Server(app);
