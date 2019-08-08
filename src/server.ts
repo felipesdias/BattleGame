@@ -4,10 +4,12 @@ import * as httpServer from 'http';
 import * as socketio from 'socket.io';
 import GameController from './Game/GameController';
 import ExtendedSocket from './Types/ExtendedSocket';
-import ServerConstants from './Utils/ServerConstants';
+import GlobalVariables from './Utils/GlobalVariables';
+import { GetTimeStamp } from './Utils/Utils';
 
 const app: express.Application = express();
-app.set('port', process.env.PORT || 3000);
+const port = process.env.PORT || 80;
+app.set('port', port);
 
 const http: httpServer.Server = new httpServer.Server(app);
 const io: SocketIO.Server = socketio(http);
@@ -18,10 +20,10 @@ app.get('/', (req: express.Request, res: express.Response) => {
 
 app.use('/client', express.static(__dirname + '../client'));
 
-const game: GameController = new GameController();
+const game: GameController = new GameController(io);
 
 io.on('connection', function (socket: ExtendedSocket) {
-    const newPlayer = game.AddPlayer();
+    const newPlayer = game.AddPlayer(socket);
 
     if (newPlayer !== null) {
         console.log(`Player ${newPlayer.id} connected`);
@@ -32,20 +34,14 @@ io.on('connection', function (socket: ExtendedSocket) {
         socket.broadcast.emit('addPlayer', initialPack[socket.player.id]);
         socket.emit('initialPack', initialPack);
 
-        socket.on('updateMousePosition', function (mousePosition) {
-            socket.player.UpdateMousePos(mousePosition.x, mousePosition.y);
-        });
-
         socket.on('updateEvent', function (event) {
-            let response: Object;
-            switch(event.type) {
-                case 'click': 
-                    response = socket.player.skillController.blink.DoBlink(game.players)
-                    break;
-                default: 
-                    return;
-            }
+            let response: ResponseToClient;
 
+            if (event.type === 'rightclick') {
+                response = socket.player.UpdateDestinationPosition(event.data);
+            } else if (socket.player.alive) {
+                response = socket.player.skillController.HandlerEventSkill(event, game.players);
+            }
             socket.emit('responseEvent', response);
         });
     }
@@ -63,10 +59,11 @@ io.on('connection', function (socket: ExtendedSocket) {
 });
 
 
-http.listen(process.env.PORT || 3000, function () {
-    console.log('listening on *:3000');
+http.listen(port, function () {
+    console.log(`listening on *:+${port}`);
 });
 
 setInterval(function () {
+    GlobalVariables.TimeNow = GetTimeStamp();
     io.emit('updatePack', game.GetUpdatePack());
-}, 25);
+}, 20);

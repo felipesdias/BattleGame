@@ -11,12 +11,22 @@ export default {
     },
     Player: {
         Raio: playerRaio,
-        Velocity: 10
+        Velocity: 10,
+        RespawnTime: 3000
     },
     Skills: {
         Blink: {
-            Countdown: 3000,
+            Countdown: 1250,
             ProtectZone: 50 + playerRaio
+        },
+        Shuriken: {
+            Raio: 10,
+            Velocity: 12
+        },
+        Shield: {
+            Countdown: 7500,
+            Duration: 2500,
+            ProtectedArea: 10
         }
     }
 };

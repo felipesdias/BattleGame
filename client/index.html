@@ -10,95 +10,370 @@
 </head>
 
 <body>
-
-    <div class="boxCanvas">
-        <canvas id="canvasGame" width="800" height="800">
-        </canvas>
+    <div class="content">
+        <div class="boxCanvas">
+            <canvas id="canvasGame" width="800" height="800">
+            </canvas>
+        </div>
+        <div style="display: flex; margin-top: 20px">
+            <div style="margin-right: 15px">
+                <input id="nickname">
+                <button id="btnConnect" onclick="startGame()"> Connect </button>
+            </div>
+            <div id="tableRank" />
+        </div>
     </div>
 
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client/js/mousetrap.min.js"></script>
+    <script src="https://hammerjs.github.io/dist/hammer.js"></script>
+    <script>
+
+        function startGame() {
+            document.getElementById('btnConnect').style.display = 'none';
+
+            const canvas = document.getElementById('canvasGame');
+            const ctx = canvas.getContext("2d");
+            const hammer = new Hammer(canvas);
+            let players = {};
+            let pressedKeys = {};
+            let mousePos = { x: 0, y: 0 };
+
+            const socket = io(`http://${location.host}`, {
+                query: {
+                    nickname: document.getElementById('nickname').value
+                }
+            });
+
+            socket.on('initialPack', function (allPlayers) {
+                players = allPlayers;
+
+                setTimeout(() => {
+                    RenderRankTable();
+                }, 250);
+            });
+
+            socket.on('addPlayer', function (player) {
+                players[player.id] = player;
+
+                setTimeout(() => {
+                    RenderRankTable();
+                }, 250);
+            });
+
+            socket.on('killPlayer', function (msg) {
+                Toastify({
+                    text: `${players[msg.killer].nickname} matou ${players[msg.killed].nickname}`,
+                    duration: 3000,
+                    close: true,
+                    gravity: "bottom", // `top` or `bottom`
+                    positionLeft: false, // `true` or `false`
+                    backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+                }).showToast();
+
+                setTimeout(() => {
+                    RenderRankTable();
+                }, 250);
+            });
+
+            socket.on('updatePack', function (msg) {
+                for (key in msg.players) {
+                    players[key] = {
+                        ...players[key],
+                        ...msg.players[key]
+                    };
+                }
+
+                RenderGame();
+            });
+
+            socket.on('blink', function (data) {
+                animationBlink(data, 500);
+            });
+
+            socket.on('deletePlayer', function (playerId) {
+                delete players[playerId];
+
+                setTimeout(() => {
+                    RenderRankTable();
+                }, 250);
+            });
+
+            socket.on('responseEvent', function (response) {
+                if (!response)
+                    return;
+
+                if (response.status !== 'OK') {
+                    console.log('responseEvent', response)
+                    if (response.status === 'CD') {
+                        Toastify({
+                            text: `Espere ${(response.countdown / 1000).toFixed(2)} segundos para usar novamente`,
+                            duration: 3000,
+                            close: true,
+                            gravity: "bottom", // `top` or `bottom`
+                            positionLeft: true, // `true` or `false`
+                            backgroundColor: "skyblue",
+                        }).showToast();
+                    }
+                    else {
+                        Toastify({
+                            text: `${response.message}`,
+                            duration: 3000,
+                            close: true,
+                            gravity: "bottom", // `top` or `bottom`
+                            positionLeft: true, // `true` or `false`
+                            backgroundColor: "skyblue",
+                        }).showToast();
+                    }
+                }
+
+            });
+
+            function animationBlink(data, duration) {
+                const originalRaio = players[data.playerId].raio;
+                const tickCos = 10.0 / duration;
+
+                players[data.playerId].animation = players[data.playerId].animation || {};
+
+                players[data.playerId].animation.blink = [];
+                const blinkParticles = players[data.playerId].animation.blink;
+
+                for (let i = 0; i < 75; i++) {
+                    let x = Math.random() * 10 * (Math.random() >= 0.5 ? 1 : -1);
+                    let y = Math.random() * 10 * (Math.random() >= 0.5 ? 1 : -1);
+                    const dist = Math.random() * players[data.playerId].raio;
+                    const norm = Math.hypot(x, y);
+                    x *= 1.0 / norm;
+                    y *= 1.0 / norm;
+
+                    blinkParticles.push({
+                        posX: x,
+                        posY: y,
+                        dist: dist,
+                        center: {
+                            posX: data.posX,
+                            posY: data.posY
+                        }
+                    });
+                }
+
+                const doAnimation = cos => {
+                    if (cos >= 1)
+                        players[data.playerId].raio = originalRaio;
+                    else {
+                        players[data.playerId].raio = originalRaio * Math.abs(Math.cos(Math.PI * cos));
+                        setTimeout(() => {
+                            doAnimation(cos + tickCos);
+                        }, 10);
+                    }
+                }
+
+                const doParticles = time => {
+                    if (time > duration)
+                        players[data.playerId].animation.blink = [];
+                    else {
+                        blinkParticles.forEach(p => {
+                            p.dist += p.dist * 0.05;
+                        });
+
+                        setTimeout(() => {
+                            doParticles(time + 10);
+                        }, 10);
+                    }
+                }
+
+                doAnimation(0.5);
+                doParticles(0);
+            }
+
+            function convertHex(hex, opacity) {
+                hex = hex.replace('#', '');
+                r = parseInt(hex.substring(0, 2), 16);
+                g = parseInt(hex.substring(2, 4), 16);
+                b = parseInt(hex.substring(4, 6), 16);
+
+                result = 'rgba(' + r + ',' + g + ',' + b + ',' + opacity / 100 + ')';
+                return result;
+            }
+
+            function RenderGame() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                for (let key in players) {
+                    RenderPlayer(players[key]);
+                    RenderPlayerAnimation(players[key]);
+                }
+            }
+
+            function RenderPlayerAnimation(player) {
+                if (!player.animation)
+                    return;
+
+                if (player.animation.blink && player.animation.blink.length > 0) {
+                    ctx.fillStyle = player.color;
+                    player.animation.blink.forEach(p => {
+                        ctx.fillRect(p.posX * p.dist + p.center.posX, p.posY * p.dist + p.center.posY, 1, 1);
+                    });
+                    ctx.stroke();
+                }
+            }
+
+            function RenderPlayer(player) {
+                ctx.fillStyle = convertHex(player.color, player.alive ? 100 : 15);
+                ctx.beginPath();
+                ctx.arc(player.posX, player.posY, player.raio, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.fill();
+
+                for (key in (player.skills || {})) {
+                    if (!player.skills[key])
+                        return;
+
+                    const skill = player.skills[key];
+
+                    switch (key) {
+                        case 'shuriken':
+                            ctx.strokeStyle = player.color;
+                            ctx.beginPath();
+                            ctx.arc(skill.posX, skill.posY, skill.raio, 0, 2 * Math.PI);
+                            ctx.closePath();
+                            ctx.stroke();
+                            break;
+                        case 'blink':
+                            break;
+                        case 'shield':
+                            if (skill.active) {
+                                ctx.fillStyle = convertHex('#00ff88', 40);
+                                ctx.beginPath();
+                                ctx.arc(player.posX, player.posY, skill.protectedArea, 0, 2 * Math.PI);
+                                ctx.closePath();
+                                ctx.fill();
+                            }
+                            break;
+                        default:
+                    }
+                }
+            }
+
+            function RenderRankTable() {
+                const divTable = document.getElementById('tableRank');
+                divTable.innerHTML = "";
+
+                const table = document.createElement('TABLE');
+
+                const header = document.createElement('TR');
+                ['Color', 'Nickname', 'Kills', 'Deaths', 'Points'].forEach(h => {
+                    const th = document.createElement('TH');
+                    th.innerText = h;
+                    header.appendChild(th);
+                });
+                table.appendChild(header);
+
+                Object.keys(players).sort((a, b) => {
+                    return (players[b].kills - players[b].deaths) - (players[a].kills - players[a].deaths)
+                }).forEach(key => {
+                    const player = players[key];
+                    const line = document.createElement('TR');
+
+                    const tdColor = document.createElement('TD');
+                    tdColor.style.background = player.color;
+                    line.append(tdColor);
+                    ['nickname', 'kills', 'deaths'].forEach(h => {
+                        const td = document.createElement('TD');
+                        td.innerText = player[h];
+                        line.appendChild(td);
+                    });
+                    const tdPoints = document.createElement('TD');
+                    tdPoints.innerText = String(player.kills - player.deaths);
+                    line.appendChild(tdPoints);
+
+                    table.appendChild(line);
+                });
+
+                divTable.appendChild(table);
+            }
+
+            function getMousePos(evt) {
+                var rect = canvas.getBoundingClientRect();
+                return {
+                    x: evt.clientX - rect.left,
+                    y: evt.clientY - rect.top
+                };
+            }
+
+            function bindKey(key, callback) {
+                Mousetrap.bind(key, function (e) {
+                    if (pressedKeys[e.keyCode])
+                        return;
+                    pressedKeys[e.keyCode] = true;
+                    callback();
+                }, 'keydown');
+
+                Mousetrap.bind(key, function (e) {
+                    pressedKeys[e.keyCode] = false;
+                }, 'keyup');
+            }
+
+
+            function shuriken() {
+                socket.emit('updateEvent', { type: 'SHURIKEN', data: { mousePos } });
+            }
+
+            function blink() {
+                socket.emit('updateEvent', { type: 'BLINK', data: { mousePos } });
+            }
+
+            function shield() {
+                socket.emit('updateEvent', { type: 'SHIELD', data: {} });
+            }
+
+
+            bindKey('q', shuriken);
+            bindKey('w', blink);
+            bindKey('e', shield);
+
+            window.onmousedown = function mouseDown(evt) {
+                switch (evt.button) {
+                    case 0:
+                        // click botão esquerdo
+                        break;
+                    case 2:
+                        socket.emit('updateEvent', { type: 'rightclick', data: { mousePos } });
+                        break;
+                    default:
+                }
+            }
+
+            window.oncontextmenu = function rigthClick(evt) {
+                return false;
+            }
+
+            window.onmousemove = function mouseMove(evt) {
+                mousePos = getMousePos(evt);
+            }
+        }
+    </script>
+
+    <style>
+        .boxCanvas {
+            border: solid 1px black;
+            width: 800px;
+            height: 800px;
+        }
+
+        .content {
+            margin: 0 auto;
+            width: 50%;
+        }
+
+        th,
+        td {
+            padding: 2px 20px;
+        }
+    </style>
 </body>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="https://hammerjs.github.io/dist/hammer.js"></script>
-<script>
-    const socket = io(`http://${location.host}`);
-    const canvas = document.getElementById('canvasGame');
-    const ctx = canvas.getContext("2d");
-    const hammer = new Hammer(canvas);
-
-    let players = {};
-
-    let sendPack = {
-        mousePos: {x: 0, y: 0}
-    };
-
-
-    socket.on('initialPack', function (allPlayers) {
-        players = allPlayers;
-    });
-
-    socket.on('addPlayer', function (player) {
-        players[player.id] = player;
-    });
-
-    socket.on('updatePack', function (msg) {
-        for (key in msg) {
-            players[key] = {
-                ...players[key],
-                ...msg[key]
-            };
-        }
-
-        RenderGame();
-    });
-
-    socket.on('deletePlayer', function (playerId) {
-        delete players[playerId];
-    });
-
-    socket.on('responseEvent', function (response) {
-        console.log(response)
-    });
-
-    function RenderGame() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        for (let key in players) {
-            ctx.beginPath();
-            RenderPlayer(players[key]);
-            ctx.stroke();
-        }
-    }
-
-    function RenderPlayer(player) {
-        ctx.arc(player.posX, player.posY, player.raio, 0, 2 * Math.PI);
-    }
-
-    function getMousePos(evt) {
-        var rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
-        };
-    }
-
-    window.onmousemove = function mouseMove(evt) {
-        socket.emit('updateMousePosition', getMousePos(evt));
-    };
-
-    window.onmousedown = function mouseDown(evt) {
-        socket.emit('updateEvent', { type: 'click'});
-    }
-
-</script>
-
-<style>
-    .boxCanvas {
-        border: solid 1px black;
-        width: 800px;
-        height: 800px;
-    }
-</style>
 
 </html>

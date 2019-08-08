@@ -13,6 +13,18 @@ export class Point {
         return new Point(this.x, this.y);
     }
 
+    public IsOutsideWord(offset: number = 0): boolean {
+        return this.x - offset < 0 || this.y - offset < 0
+            || this.x + offset > ServerConstants.World.Width || this.y + offset > ServerConstants.World.Height;
+    }
+
+    public CutBorderWord(offset: number = 0): Point {
+        return new Point(
+            Math.min(ServerConstants.World.Width - offset, Math.max(0 + offset, this.x)),
+            Math.min(ServerConstants.World.Height - offset, Math.max(0 + offset, this.y))
+        );
+    }
+
     public Add(other: Point): Point {
         return new Point(this.x + other.x, this.y + other.y);
     }
@@ -58,20 +70,28 @@ export class Circle {
     raio: number;
 
     constructor(_center: Point = new Point(), _raio: number = 0) {
-        this.center = _center;
+        this.center = _center.Clone();
         this.raio = _raio;
     }
 
-    area(): number {
+    AddRaio(r: number) {
+        return new Circle(this.center, this.raio + r);
+    }
+
+    Area(): number {
         return Math.acos(-1.0) * this.raio * this.raio;
     }
 
-    intersects(other: Circle): boolean {
+    Intersects(other: Circle): boolean {
         return Dist(this.center, other.center) < this.raio + other.raio;
     }
 
-    contains(p: Point): boolean {
+    Contains(p: Point): boolean {
         return Dist(this.center, p) <= this.raio + ServerConstants.EPS;
+    }
+
+    Colision(direction: Point, c: Circle): Point {
+        return this.center.Sub(c.center).Sub(direction);
     }
 }
 
