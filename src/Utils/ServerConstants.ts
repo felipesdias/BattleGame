@@ -3,7 +3,7 @@ const playerRaio: number = 12;
 export default {
     EPS: 1e-9,
     GameController: {
-        NumberOfPlayers: 5
+        NumberOfPlayers: 10
     },
     World: {
         Width: 800,
