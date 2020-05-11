@@ -15,10 +15,10 @@ const http: httpServer.Server = new httpServer.Server(app);
 const io: SocketIO.Server = socketio(http);
 
 app.get('/', (req: express.Request, res: express.Response) => {
-    res.sendFile(path.resolve('../client/index.html'));
+    res.sendFile(__dirname + '/client/index.html');
 });
 
-app.use('/client', express.static(__dirname + '../client'));
+app.use('/client', express.static(__dirname + '/client'));
 
 const game: GameController = new GameController(io);
 
